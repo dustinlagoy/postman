@@ -19,7 +19,7 @@ TrackCollection = dict[int, Track]
 class Node:
     name: str
     point: shapely.Point
-    tracks: TrackCollection
+    tracks: list[int]
 
 
 NodeCollection = dict[int, Node]
