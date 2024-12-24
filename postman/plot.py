@@ -1,10 +1,14 @@
 import geoviews as gv
 import holoviews as hv
+import matplotlib
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
+import shapely.plotting
 from bokeh.models import ColumnDataSource, CustomJSHover, HoverTool
 from cartopy import crs
 
-import datatypes
+from postman import datatypes, utils
 
 lat_lon_js = """
     const projections = Bokeh.require("core/util/projections");
@@ -120,3 +124,66 @@ def plot_nodes(nodes: datatypes.NodeCollection):
         ],
         vdims=["name"],
     ).opts(size=10, tools=[hover], color="red")
+
+
+def plot_graph(graph):
+    _, axis = plt.subplots(1, 1, figsize=(12, 6), sharex=True, sharey=True)
+    _plot_graph(graph, axis, False)
+    plt.tight_layout()
+
+
+def plot_graph_with_trails(trails, graph):
+    _, axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+    plot_trails(trails, axes[0])
+    _plot_graph(graph, axes[1], True)
+    for i, facet in enumerate(axes):
+        facet.set_title(("Map", "Graph")[i])
+        facet.axis("off")
+    plt.tight_layout()
+
+
+def plot_tour(tour):
+    _, axis = plt.subplots(1, 1, figsize=(12, 6))
+    plot_path(tour, axis)
+    plt.tight_layout()
+
+
+def plot_path(path, axis):
+    length = 0
+    seen = []
+    # cmap = matplotlib.cm.get_cmap("brg")
+    cmap = matplotlib.cm.get_cmap("viridis")
+    for i, (u, v, data) in enumerate(path):
+        print(i, utils.label_len(data))
+        length += data["distance"]
+        offset_count = seen.count(data)
+        seen.append(data)
+        color = cmap(i / len(path))
+        curve = data["geometry"].offset_curve(offset_count * 5)
+        center = curve.line_interpolate_point(0.5, normalized=True)
+        shapely.plotting.plot_line(curve, axis, add_points=False, color=color)
+        axis.text(center.x, center.y, i, color="r", size="large")
+    print(length)
+
+
+def _plot_graph(graph, axis, geometric=False):
+    if geometric:
+        positions = {n[0]: [n[1]["x"], n[1]["y"]] for n in list(graph.nodes.data())}
+    else:
+        positions = nx.spring_layout(graph)
+    names = {(x[0], x[1]): utils.label_len(x[2]) for x in graph.edges.data()}
+    nx.draw(graph, positions, ax=axis, node_size=10)
+    nx.draw_networkx_labels(
+        graph, positions, ax=axis, font_color="r", font_weight="bold"
+    )
+    nx.draw_networkx_edge_labels(graph, positions, names, ax=axis, node_size=10)
+
+
+def plot_trails(trails, axis):
+    trails.plot(color="k", ax=axis)
+    trails.apply(
+        lambda x: axis.annotate(
+            text=utils.label_len(x), xy=x.geometry.centroid.coords[0], ha="center"
+        ),
+        axis=1,
+    )

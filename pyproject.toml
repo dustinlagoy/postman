@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "postman"
+version = "0.1.0"
+description = ""
+authors = ["Dustin Lagoy <dustin@lagoy.org>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+postman = "postman.cli:main"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+shapely = "^2.0.6"
+geopandas = "^1.0.1"
+networkx = "^3.4.2"
+momepy = "^0.9.1"
+geoviews = "^1.14.0"
+holoviews = "^1.20.0"
+types-networkx = "^3.4.2.20241115"
+types-shapely = "^2.0.0.20241221"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.12"
+[[tool.mypy.overrides]]
+module = [
+    "holoviews.*",
+    "geoviews.*",
+    "geopandas.*",
+    "cartopy.*",
+    "momepy.*",
+]
+ignore_missing_imports = true
