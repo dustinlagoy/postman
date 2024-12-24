@@ -1,33 +1,19 @@
 import bisect
 import dataclasses
+import time
 
 import gpxpy
 import shapely
 
 import datatypes
+import load
 import plot
-
-
-def load_gpx(filename: str) -> datatypes.TrackCollection:
-    with open(filename) as fp:
-        gpx = gpxpy.parse(fp)
-    id = 0
-    tracks = {}
-    for track in gpx.tracks:
-        name = track.name.strip("\n")
-        print("track", name)
-        points = []
-        for segment in track.segments:
-            for point in segment.points:
-                points.append((point.longitude, point.latitude, point.elevation))
-        tracks[id] = datatypes.Track(name, shapely.LineString(points))
-        id += 1
-    return tracks
 
 
 def get_intersections(tracks: datatypes.TrackCollection) -> datatypes.NodeCollection:
     intersections: datatypes.NodeCollection = {}
     node_id = 0
+    start = time.time()
     for id, track in tracks.items():
         for other_id, other_track in tracks.items():
             if id != other_id:
@@ -55,6 +41,8 @@ def get_intersections(tracks: datatypes.TrackCollection) -> datatypes.NodeCollec
                         add_node_to_track(track, node_id, item)
                         add_node_to_track(other_track, node_id, item)
                         node_id += 1
+    print("delta", time.time() - start)
+    print(f"found {len(intersections)} intersections")
     return intersections
 
 
@@ -172,7 +160,10 @@ def split_at_node(
     return before, after
 
 
-tracks = load_gpx("/home/dustin/documents/maps/nickel-plate/nickel-plate-nordic-centre-33365_trails_trailforks.gpx")
+tracks = load.load_gpx(
+    "/home/dustin/documents/maps/nickel-plate/nickel-plate-nordic-centre-33365_trails_trailforks.gpx"
+)
+tracks = load.load_gpx("/home/dustin/src/personal/plumber/np.gpx")
 nodes = get_intersections(tracks)
 for track in tracks.values():
     print(track.name, track.start, track.end, track.extra_nodes)
