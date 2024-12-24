@@ -2,10 +2,12 @@ import sys
 from itertools import combinations
 
 import geopandas
+import matplotlib
 import matplotlib.pyplot as plt
 import momepy
 import networkx as nx
 import numpy as np
+import shapely.plotting
 
 
 def main():
@@ -29,39 +31,44 @@ def main():
             "{:02d} {:12.4f} {}".format(i, data["distance"], str(data["name"]).strip())
         )
     print("total", sum(x["distance"] for _, _, x in graph.edges(data=True)))
-    ax = plot_both(new, graph)
+    path = trail_tour(graph, 6)
     plot_one(graph)
-    path = trail_tour(graph, graph.get_edge_data(5, 6)[0], ax)
+    plot_both(new, graph)
+    plot_tour(path)
     plt.show()
 
 
-def trail_tour(graph, start, ax):
-    # euler = nx.eulerize(graph)
-    euler = weighted_eulerize(graph, "distance")
-    euler_start = None
-    for u, v, data in euler.edges(data=True):
-        if data["distance"] == start["distance"]:
-            euler_start = u
-    path = nx.eulerian_circuit(euler, euler_start, keys=True)
+def plot_path(path, axis):
     length = 0
     seen = []
-    for i, (u, v, k) in enumerate(path):
-        data = euler.get_edge_data(u, v)[k]
-        # print(i, u, v, k, euler.get_edge_data(u, v))
+    # cmap = matplotlib.cm.get_cmap("brg")
+    cmap = matplotlib.cm.get_cmap("viridis")
+    for i, (u, v, data) in enumerate(path):
         print(i, label_len(data))  # , label(item))
         length += data["distance"]
-        center = data["geometry"].line_interpolate_point(0.5, normalized=True)
-        if center in seen:
-            ax.text(center.x + 15, center.y + 15, i, color="r", size="large")
-        else:
-            seen.append(center)
-            ax.text(center.x, center.y, i, color="r", size="large")
+        offset_count = seen.count(data)
+        seen.append(data)
+        color = cmap(i / len(path))
+        curve = data["geometry"].offset_curve(offset_count * 5)
+        center = curve.line_interpolate_point(0.5, normalized=True)
+        shapely.plotting.plot_line(curve, axis, add_points=False, color=color)
+        axis.text(center.x, center.y, i, color="r", size="large")
     print(length)
-    return path
 
-    # weighted = add_average_weight(graph)
-    # supergraph = find_euler_supergraph(graph)
-    # tour = find_tour(supergraph)
+
+def print_graph(graph: nx.MultiGraph):
+    for u in graph.nodes:
+        print(u)
+        for v in graph.neighbors(u):
+            print("  ", v)
+            for _, edge in graph.get_edge_data(u, v).items():
+                print("    ", label_len(edge))
+
+
+def trail_tour(graph: nx.MultiGraph, start: int):
+    euler = weighted_eulerize(graph, "distance")
+    path = nx.eulerian_circuit(euler, start, keys=True)
+    return [(u, v, euler.get_edge_data(u, v)[k]) for u, v, k in path]
 
 
 def multigraph_path_length(G, P, weight="weight"):
@@ -146,35 +153,13 @@ def weighted_eulerize(G, weight="weight"):
     # duplicate each edge along each path in the set of paths in Gp
     for m, n in best_matching.edges():
         path = multigraph_shortest_path(G, Gp[m][n]["path"], weight)
-        print(m, n, end="")
-        for u, v, p in path:
-            print(" ", u, v, label_len(p), end="")
-        print()
+        # print(m, n, end="")
+        # for u, v, p in path:
+        #     print(" ", u, v, label_len(p), end="")
+        # print()
         # G.add_edges_from(nx.utils.pairwise(path))
         G.add_edges_from(path)
     return G
-
-
-def add_average_weight(graph):
-    pass
-
-
-def find_euler_supergraph(graph):
-    # need to have even number of edges connected to each node to be eulerian graph
-    # can duplicate each edge (e) x_e times to achieve this
-    # need to find x_e (for each edge)
-    n_nodes = 0
-    d_n_plus = np.zeros(n_nodes) + np.inf
-    d_n_minus = np.zeros(n_nodes)
-    y_n = np.zeros(n_nodes)
-    for i, node in enumerate(graph.nodes):
-        d_n_plus
-
-    pass
-
-
-def find_tour(graph):
-    pass
 
 
 def plot_graph(graph, axis, geometric=False):
@@ -196,21 +181,30 @@ def plot_one(graph):
     plt.tight_layout()
 
 
-def plot_both(trails, graph):
-    _, axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
-    trails.plot(color="k", ax=axes[0])
+def plot_trails(trails, axis):
+    trails.plot(color="k", ax=axis)
     trails.apply(
-        lambda x: axes[0].annotate(
+        lambda x: axis.annotate(
             text=label_len(x), xy=x.geometry.centroid.coords[0], ha="center"
         ),
         axis=1,
     )
+
+
+def plot_tour(tour):
+    _, axis = plt.subplots(1, 1, figsize=(12, 6))
+    plot_path(tour, axis)
+    plt.tight_layout()
+
+
+def plot_both(trails, graph):
+    _, axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+    plot_trails(trails, axes[0])
+    plot_graph(graph, axes[1], True)
     for i, facet in enumerate(axes):
         facet.set_title(("Map", "Graph")[i])
         facet.axis("off")
-    plot_graph(graph, axes[1], True)
     plt.tight_layout()
-    return axes[0]
 
 
 def label(x: dict):
@@ -249,17 +243,7 @@ def preprocess(trails: geopandas.GeoDataFrame):
     new = momepy.remove_false_nodes(new)
     new = fix_nans(trails, new)
     new.geometry = momepy.close_gaps(new, 0.1)
-    # new = remove_empties(new)
     return new
-
-
-def remove_empties(new):
-    print(len(new))
-    for i, item in new.iterrows():
-        print(i, item["geometry"] is None, item["distance"])
-    print(len(new["geometry"] != None))
-    tmp = new[new["geometry"] != None]
-    sys.exit()
 
 
 def fix_nans(old, new):

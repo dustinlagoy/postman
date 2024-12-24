@@ -2,3 +2,6 @@ gpxpy
 shapely
 holoviews
 geoviews
+geopandas
+networkx
+momepy
