@@ -18,11 +18,12 @@ def main():
     print(type(trails))
     clean_trails = preprocess.fix_trails(trails)
     graph = preprocess.to_graph(clean_trails)
-    path = core.trail_tour(graph, 6)
-    plot.plot_graph(graph)
-    plot.plot_graph_with_trails(clean_trails, graph)
-    plot.plot_tour(path)
-    plt.show()
+    tour = core.trail_tour(graph, 6)
+    plot.plot_tracks(plot.tour_to_tracks(tour))
+    # plot.plot_graph(graph)
+    # plot.plot_graph_with_trails(clean_trails, graph)
+    # plot.plot_tour(path)
+    # plt.show()
 
 
 def print_trails(trails):
@@ -43,5 +44,5 @@ def print_graph(graph):
     print("total", sum(x["distance"] for _, _, x in graph.edges(data=True)))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" or __name__.startswith("bokeh_app"):
     main()

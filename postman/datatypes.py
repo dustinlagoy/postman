@@ -1,25 +1,15 @@
 import dataclasses
+import typing
 
 import shapely
+
+Tour = list[tuple[float, float, dict[str, typing.Any]]]
 
 
 @dataclasses.dataclass
 class Track:
     name: str
     path: shapely.LineString
-    start: int | None = None
-    end: int | None = None
-    extra_nodes: list[int] = dataclasses.field(default_factory=list)
 
 
 TrackCollection = dict[int, Track]
-
-
-@dataclasses.dataclass
-class Node:
-    name: str
-    point: shapely.Point
-    tracks: list[int]
-
-
-NodeCollection = dict[int, Node]

@@ -456,6 +456,17 @@ recommended = ["datashader", "geopandas", "matplotlib (>2.2)", "netcdf4", "panda
 tests = ["psutil", "pytest", "pytest-xdist"]
 
 [[package]]
+name = "gpxpy"
+version = "1.6.2"
+description = "GPX file parser and GPS track manipulation library"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "gpxpy-1.6.2-py3-none-any.whl", hash = "sha256:289bc2d80f116c988d0a1e763fda22838f83005573ece2bbc6521817b26fb40a"},
+    {file = "gpxpy-1.6.2.tar.gz", hash = "sha256:a72c484b97ec42b80834353b029cc8ee1b79f0ffca1179b2210bb3baf26c01ae"},
+]
+
+[[package]]
 name = "holoviews"
 version = "1.20.0"
 description = "A high-level plotting API for the PyData ecosystem built on HoloViews."
@@ -1797,4 +1808,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "07a02be36dbd77937dc3cb880db1a702dc9e7b8bf18e38fe9636e4e673f5c93a"
+content-hash = "d781609035ca20c6f2e061f22f332f438f8ef37b86e1ad4ce453c3e734dcd6d6"

@@ -1,9 +1,12 @@
+import array
+
 import geoviews as gv
 import holoviews as hv
 import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pyproj
 import shapely.plotting
 from bokeh.models import ColumnDataSource, CustomJSHover, HoverTool
 from cartopy import crs
@@ -24,25 +27,60 @@ node_js = """
 """
 
 
-def plot_tracks(tracks: datatypes.TrackCollection, nodes: datatypes.NodeCollection):
+def geoframe_to_tracks(df) -> datatypes.TrackCollection:
+    out: datatypes.TrackCollection = {}
+    transformer = pyproj.Transformer.from_crs(32610, 4326)
+    for id, track in df.iterrows():
+        latitude, longitude = transformer.transform(*track["geometry"].coords.xy)
+        if latitude[-1] == latitude[-2]:
+            latitude = latitude[:-1]
+            longitude = longitude[:-1]
+        out[id] = datatypes.Track(
+            utils.label_len(track),
+            shapely.LineString([[x, y] for x, y in zip(longitude, latitude)]),
+        )
+    return out
+
+
+def tour_to_tracks(tour: datatypes.Tour) -> datatypes.TrackCollection:
+    out: datatypes.TrackCollection = {}
+    transformer = pyproj.Transformer.from_crs(32610, 4326)
+    seen: list[int] = []
+    for i, (_, _, data) in enumerate(tour):
+        id = data["index_position"]
+        offset_count = seen.count(id)
+        x, y = data["geometry"].offset_curve(offset_count * 10).coords.xy
+        seen.append(id)
+        latitude, longitude = transformer.transform(x, y)
+        if latitude[-1] == latitude[-2] or longitude[-1] == longitude[-2]:
+            latitude = latitude[:-1]
+            longitude = longitude[:-1]
+        out[i] = datatypes.Track(
+            utils.label_len(data),
+            shapely.LineString([[x, y] for x, y in zip(longitude, latitude)]),
+        )
+    return out
+
+
+def plot_tracks(tracks: datatypes.TrackCollection):
     renderer = hv.renderer("bokeh")
     tools = ["pan", "wheel_zoom", "box_zoom", "undo", "redo", "reset"]
-    plot = gv.tile_sources.OpenTopoMap.opts(tools=tools, height=800, width=800)
-    for item in plot_many_tracks(tracks):
-        plot *= item
-    print("nodes", nodes)
-    plot *= plot_nodes(nodes)
-    print(plot)
+    plot = gv.tile_sources.OpenTopoMap.opts(
+        tools=tools, responsive=True
+    )  # , height=800, width=800)
+    plot *= _plot_tracks(tracks)
+    # print("nodes", nodes)
+    # plot *= plot_nodes(nodes)
     renderer.server_doc(plot)
 
 
-def plot_many_tracks(tracks: datatypes.TrackCollection):
+def _plot_tracks(tracks: datatypes.TrackCollection):
     show_legend = False
-    data = {}
     output = []
     for id, track in list(tracks.items()):
         # should be able to add color to each item as dictionary value
         # output.append(track.path.coords)
+        print(id, type(id), track.name, type(track.name))
         output.append(
             {
                 "Longitude": track.path.coords.xy[0],
@@ -51,29 +89,6 @@ def plot_many_tracks(tracks: datatypes.TrackCollection):
                 "id": id,
             }
         )
-
-        # points = [(x[0], x[1]) for x in track.path.simplify(0.001).coords]
-        # print(track.name, len(track.path.coords), len(points))
-        # path = gv.Path(points, label=f"{id} {track.name}").opts(
-        #     line_width=3, show_legend=show_legend
-        # )
-        # hover = HoverTool(
-        #     tooltips=[
-        #         ("name", f"{id} {track.name}"),
-        #         ("lon", "$x{custom}"),
-        #         ("lat", "$y{custom}"),
-        #         ("edges", f"{track.start} to {track.end}"),
-        #     ],
-        #     formatters={
-        #         "$x": CustomJSHover(code=lat_lon_js.format(0)),
-        #         "$y": CustomJSHover(code=lat_lon_js.format(1)),
-        #     },
-        #     point_policy="follow_mouse",
-        # )
-        # output.append(path.opts(tools=[hover]))
-        # output.append(path.opts())
-
-    # return [gv.Path(output).opts(line_width=3, show_legend=True)]
     hover = HoverTool(
         tooltips=[
             ("name", "@name"),
@@ -87,43 +102,9 @@ def plot_many_tracks(tracks: datatypes.TrackCollection):
         },
         point_policy="follow_mouse",
     )
-    print(len(output))
-    # use contours due to https://github.com/holoviz/holoviews/issues/4862
-    return [
-        gv.Contours(output, vdims=["name", "id"]).opts(
-            cmap="hsv",
-            color="id",
-            line_width=3,
-            tools=[hover],
-        )
-    ]
-
-
-def plot_nodes(nodes: datatypes.NodeCollection):
-    # text = [f"{i} tracks: {repr(x.name)}" for i, x in nodes.items()]
-    hover = HoverTool(
-        tooltips=[
-            ("lon", "$x{custom}"),
-            ("lat", "$y{custom}"),
-            ("node", "@name"),
-            # ("node", "$index{custom}"),
-        ],
-        formatters={
-            "$x": CustomJSHover(code=lat_lon_js.format(0)),
-            "$y": CustomJSHover(code=lat_lon_js.format(1)),
-            # "$index": CustomJSHover(
-            #     args=dict(nodes=ColumnDataSource(dict(text=text))), code=node_js
-            # ),
-        },
-        point_policy="follow_mouse",
+    return gv.Contours(output, vdims=["name", "id"]).opts(
+        cmap="brg", color="id", line_width=3, tools=[hover]
     )
-    return gv.Points(
-        [
-            {"Longitude": x.point.x, "Latitude": x.point.y, "name": x.name}
-            for x in nodes.values()
-        ],
-        vdims=["name"],
-    ).opts(size=10, tools=[hover], color="red")
 
 
 def plot_graph(graph):

@@ -9,8 +9,10 @@ import networkx as nx
 import numpy as np
 import shapely.plotting
 
+from postman import datatypes
 
-def trail_tour(graph: nx.MultiGraph, start: int):
+
+def trail_tour(graph: nx.MultiGraph, start: int) -> datatypes.Tour:
     euler = weighted_eulerize(graph, "distance")
     path = nx.eulerian_circuit(euler, start, keys=True)
     return [(u, v, euler.get_edge_data(u, v)[k]) for u, v, k in path]

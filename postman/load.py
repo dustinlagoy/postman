@@ -1,7 +1,7 @@
 import gpxpy
 import shapely
 
-import datatypes
+from postman import datatypes
 
 
 def load_gpx(

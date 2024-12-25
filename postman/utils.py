@@ -4,7 +4,6 @@ import networkx as nx
 def label(x: dict):
     id = x.get("index_position", None)
     if id is None:
-        print(type(x))
         id = x.name
     return "{:03d} {}".format(id, str(x["name"]).strip())
 
