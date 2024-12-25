@@ -9,13 +9,36 @@ import networkx as nx
 import numpy as np
 import shapely.plotting
 
-from postman import datatypes
+from postman import datatypes, utils
 
 
 def trail_tour(graph: nx.MultiGraph, start: int) -> datatypes.Tour:
-    euler = weighted_eulerize(graph, "distance")
+    weight_with_elevation(graph, 10)
+    euler = weighted_eulerize(graph, "weight")
     path = nx.eulerian_circuit(euler, start, keys=True)
-    return [(u, v, euler.get_edge_data(u, v)[k]) for u, v, k in path]
+    tour = [(u, v, euler.get_edge_data(u, v)[k]) for u, v, k in path]
+    add_segment_direction(tour, graph)
+    return tour
+
+
+def weight_with_elevation(graph: nx.MultiGraph, scale=1.0):
+    for u, v, data in graph.edges(data=True):
+        data["weight"] = (
+            data["distance"]
+            + (data["deniv_pos"] * scale + data["deniv_neg"] * scale) / 2
+        )
+        print(utils.label_len(data), data["weight"])
+
+
+def add_segment_direction(tour, graph):
+    for i, (u, v, data) in enumerate(tour):
+        x, y = data["geometry"].coords.xy
+        dx = abs(graph.nodes[u]["x"] - x[0])
+        dy = abs(graph.nodes[u]["y"] - y[0])
+        if dx + dy < 0.1:
+            data["forwards"] = True
+        else:
+            data["forwards"] = False
 
 
 def weighted_eulerize(G, weight="weight"):
