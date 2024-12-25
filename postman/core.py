@@ -24,7 +24,7 @@ def weighted_eulerize(G, weight="weight"):
     if not nx.is_connected(G):
         raise nx.NetworkXError("G is not connected")
     odd_degree_nodes = [n for n, d in G.degree() if d % 2 == 1]
-    print("odd degree nodes", len(odd_degree_nodes))
+    # print("odd degree nodes", len(odd_degree_nodes))
     G = nx.MultiGraph(G)
     if len(odd_degree_nodes) == 0:
         return G
@@ -34,8 +34,8 @@ def weighted_eulerize(G, weight="weight"):
         (m, {n: nx.shortest_path(G, source=m, target=n, weight=weight)})
         for m, n in combinations(odd_degree_nodes, 2)
     ]
-    print(odd_deg_pairs_paths)
-    print("odd degree pairs", len(odd_deg_pairs_paths))
+    # print(odd_deg_pairs_paths)
+    # print("odd degree pairs", len(odd_deg_pairs_paths))
 
     # use the number of vertices in a graph + 1 as an upper bound on
     # the maximum length of a path in G
@@ -59,7 +59,7 @@ def weighted_eulerize(G, weight="weight"):
                 # https://groups.google.com/g/networkx-discuss/c/87uC9F0ug8Y/m/CrNNYEHLZfIJ
                 # instead assume that is what the shortest path algorithm did
                 length = multigraph_path_length(G, P, weight)
-                print(n, m, P, length)
+                # print(n, m, P, length)
                 Gp.add_edge(
                     m, n, weight=upper_bound_on_max_path_length - length, path=P
                 )

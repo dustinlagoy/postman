@@ -80,7 +80,6 @@ def _plot_tracks(tracks: datatypes.TrackCollection):
     for id, track in list(tracks.items()):
         # should be able to add color to each item as dictionary value
         # output.append(track.path.coords)
-        print(id, type(id), track.name, type(track.name))
         output.append(
             {
                 "Longitude": track.path.coords.xy[0],

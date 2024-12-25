@@ -1,15 +1,51 @@
 import networkx as nx
 
+from postman import datatypes
 
-def label(x: dict):
+
+def _id(x):
     id = x.get("index_position", None)
     if id is None:
         id = x.name
-    return "{:03d} {}".format(id, str(x["name"]).strip())
+    return id
+
+
+def _name(x):
+    return str(x["name"]).strip()
+
+
+def label(x: dict):
+    return "{:03d} {}".format(_id(x), _name(x))
 
 
 def label_len(x):
-    return "{} {:.2f}".format(label(x), x["geometry"].length)
+    return "{:03d} {:8.2f} {}".format(_id(x), x["geometry"].length, _name(x))
+
+
+def print_tour(tour: datatypes.Tour):
+    total = 0
+    for i, (_, _, data) in enumerate(tour):
+        print("{:02d} {}".format(i, label_len(data)))
+        total += data["distance"]
+    print("total", total)
+
+
+def print_trails(trails):
+    for i in trails.iterrows():
+        print(
+            "{:02d} {:12.4f} {}".format(
+                i[0], i[1]["distance"], str(i[1]["name"]).strip()
+            )
+        )
+    print("total", sum(x.distance for _, x in trails.iterrows()))
+
+
+def print_graph(graph):
+    for i, (_, _, data) in enumerate(graph.edges(data=True)):
+        print(
+            "{:02d} {:12.4f} {}".format(i, data["distance"], str(data["name"]).strip())
+        )
+    print("total", sum(x["distance"] for _, _, x in graph.edges(data=True)))
 
 
 def print_graph(graph: nx.MultiGraph):
