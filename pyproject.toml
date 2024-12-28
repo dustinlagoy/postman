@@ -22,6 +22,9 @@ gpxpy = "^1.6.2"
 rasterio = "^1.4.3"
 rioxarray = "^0.18.1"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -37,3 +40,8 @@ module = [
     "momepy.*",
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]

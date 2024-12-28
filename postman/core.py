@@ -25,9 +25,9 @@ def weight_with_elevation(graph: nx.MultiGraph, scale=1.0):
     for u, v, data in graph.edges(data=True):
         data["weight"] = (
             data["distance"]
-            + (data["deniv_pos"] * scale + data["deniv_neg"] * scale) / 2
+            + (data["elevation_gain"] * scale + data["elevation_loss"] * scale) / 2
         )
-        print(utils.label_len(data), data["weight"])
+        # print(utils.label_len(data), data["weight"])
 
 
 def fix_segment_direction(tour, graph):
@@ -37,21 +37,10 @@ def fix_segment_direction(tour, graph):
         dy = abs(graph.nodes[u]["y"] - y[0])
         if dx + dy > 0.1:
             # start of path is not alighned with node, it must be backwards
-            tmp = data["deniv_pos"]
-            data["deniv_pos"] = data["deniv_neg"]
-            data["deniv_neg"] = tmp
+            tmp = data["elevation_gain"]
+            data["elevation_gain"] = data["elevation_loss"]
+            data["elevation_loss"] = tmp
             data["geometry"] = data["geometry"].reverse()
-
-
-def add_segment_direction(tour, graph):
-    for i, (u, v, data) in enumerate(tour):
-        x, y = data["geometry"].coords.xy
-        dx = abs(graph.nodes[u]["x"] - x[0])
-        dy = abs(graph.nodes[u]["y"] - y[0])
-        if dx + dy < 0.1:
-            data["forwards"] = True
-        else:
-            data["forwards"] = False
 
 
 def weighted_eulerize(G, weight="weight"):

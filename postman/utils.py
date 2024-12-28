@@ -28,8 +28,8 @@ def print_tour(tour: datatypes.Tour):
     total_up = 0
     total_down = 0
     for i, (_, _, data) in enumerate(tour):
-        up = data["deniv_pos"]
-        down = data["deniv_neg"]
+        up = data["elevation_gain"]
+        down = data["elevation_loss"]
         print("{:02d} {:8.2f} {:8.2f} {}".format(i, up, down, label_len(data)))
         length += data["distance"]
         total_up += up

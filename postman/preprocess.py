@@ -29,8 +29,8 @@ def fix_nans(old, new):
         "name",
         "number",
         "distance",
-        "deniv_pos",
-        "deniv_neg",
+        "elevation_gain",
+        "elevation_loss",
     ]
     for i, row in new.iterrows():
         if np.isnan(row["distance"]):
@@ -75,5 +75,5 @@ def add_elevation_stats(trails):
             #     )
             # )
             trails.at[i, "distance"] = geometry.length
-            trails.at[i, "deniv_pos"] = up
-            trails.at[i, "deniv_neg"] = down
+            trails.at[i, "elevation_gain"] = up
+            trails.at[i, "elevation_loss"] = down
