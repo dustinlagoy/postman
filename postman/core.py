@@ -68,7 +68,6 @@ def weighted_eulerize(G, weight="weight"):
     upper_bound_on_max_path_length = (
         sum(x[weight] for _, _, x in G.edges(data=True)) + 1
     )
-    # TODO keep updating below
 
     # use "len(G) + 1 - len(P)",
     # where P is a shortest path between vertices n and m,
@@ -78,7 +77,7 @@ def weighted_eulerize(G, weight="weight"):
     for n, Ps in odd_deg_pairs_paths:
         for m, P in Ps.items():
             if n != m:
-                # note should just remove longer paths between nodes (as they
+                # TODO should just remove longer paths between nodes (as they
                 # will never be part of a shortest path) before finding shorter
                 # paths above as noted in
                 # https://groups.google.com/g/networkx-discuss/c/87uC9F0ug8Y/m/CrNNYEHLZfIJ
