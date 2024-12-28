@@ -1,6 +1,7 @@
 import networkx as nx
+import shapely
 
-from postman import datatypes
+from postman import datatypes, srtm
 
 
 def _id(x):
@@ -27,12 +28,8 @@ def print_tour(tour: datatypes.Tour):
     total_up = 0
     total_down = 0
     for i, (_, _, data) in enumerate(tour):
-        if data["forwards"]:
-            up = data["deniv_pos"]
-            down = data["deniv_neg"]
-        else:
-            up = data["deniv_neg"]
-            down = data["deniv_pos"]
+        up = data["deniv_pos"]
+        down = data["deniv_neg"]
         print("{:02d} {:8.2f} {:8.2f} {}".format(i, up, down, label_len(data)))
         length += data["distance"]
         total_up += up
@@ -85,3 +82,7 @@ def print_nodes(graph):
         edges = [graph.get_edge_data(*x)[0] for x in nx.edges(graph, item)]
         labels = [label(x) for x in edges]
         print(item, labels)
+
+
+def add_elevation(path: shapely.LineString):
+    return shapely.LineString([[x, y, srtm.sample(y, x)] for x, y in path.coords])

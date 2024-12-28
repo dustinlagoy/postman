@@ -42,22 +42,28 @@ def geoframe_to_tracks(df) -> datatypes.TrackCollection:
     return out
 
 
-def tour_to_tracks(tour: datatypes.Tour) -> datatypes.TrackCollection:
+def tour_to_tracks(
+    tour: datatypes.Tour, offset_overlap: float = 0.0
+) -> datatypes.TrackCollection:
     out: datatypes.TrackCollection = {}
     transformer = pyproj.Transformer.from_crs(32610, 4326)
     seen: list[int] = []
     for i, (_, _, data) in enumerate(tour):
         id = data["index_position"]
         offset_count = seen.count(id)
-        x, y = data["geometry"].offset_curve(offset_count * 10).coords.xy
+        if offset_overlap != 0:
+            x, y = data["geometry"].offset_curve(offset_count * 10).coords.xy
+        else:
+            x, y = data["geometry"].coords.xy
         seen.append(id)
         latitude, longitude = transformer.transform(x, y)
         if latitude[-1] == latitude[-2] or longitude[-1] == longitude[-2]:
             latitude = latitude[:-1]
             longitude = longitude[:-1]
         out[i] = datatypes.Track(
-            utils.label_len(data),
-            shapely.LineString([[x, y] for x, y in zip(longitude, latitude)]),
+            name=utils._name(data),
+            id=i,
+            path=shapely.LineString([[x, y] for x, y in zip(longitude, latitude)]),
         )
     return out
 

@@ -5,7 +5,11 @@ import geopandas
 import momepy
 import networkx as nx
 import numpy as np
+import shapely
 import shapely.plotting
+import srtm
+
+from postman import utils
 
 
 def fix_trails(trails: geopandas.GeoDataFrame):
@@ -25,11 +29,8 @@ def fix_nans(old, new):
         "name",
         "number",
         "distance",
-        "max_elevat",
-        "min_elevat",
         "deniv_pos",
         "deniv_neg",
-        "kme",
     ]
     for i, row in new.iterrows():
         if np.isnan(row["distance"]):
@@ -47,3 +48,32 @@ def to_graph(trails):
     return momepy.gdf_to_nx(
         trails, approach="primal", integer_labels=True, preserve_index=True
     )
+
+
+def add_elevation_stats(trails):
+    for i, row in trails.iterrows():
+        geometry = row["geometry"]
+        if geometry is None:
+            trails.at[i, "distance"] = None
+        else:
+            up = 0
+            down = 0
+            last_z = None
+            for x, y, z in geometry.coords:
+                if last_z is None:
+                    last_z = z
+                else:
+                    delta = z - last_z
+                    if delta > 0:
+                        up += delta
+                    else:
+                        down += delta * -1
+                    last_z = z
+            # print(
+            #     "{:3d} {:10.3f} {:8.3f} {:8.3f} {}".format(
+            #         i, geometry.length, up, down, utils._name(row)
+            #     )
+            # )
+            trails.at[i, "distance"] = geometry.length
+            trails.at[i, "deniv_pos"] = up
+            trails.at[i, "deniv_neg"] = down
