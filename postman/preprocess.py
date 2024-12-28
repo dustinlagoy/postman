@@ -7,7 +7,6 @@ import networkx as nx
 import numpy as np
 import shapely
 import shapely.plotting
-import srtm
 
 from postman import utils
 
