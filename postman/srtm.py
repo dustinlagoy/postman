@@ -1,3 +1,4 @@
+import array
 import io
 import os
 import zipfile
@@ -5,6 +6,7 @@ import zipfile
 import rasterio
 import rioxarray
 import urllib3
+import xarray as xr
 
 TMP = "/tmp/srtm"
 
@@ -43,5 +45,23 @@ def sample(latitude: float, longitude: float) -> float:
     if not os.path.exists(filename):
         download(i_lat, i_lon)
     dataset = rioxarray.open_rasterio(filename)
+    assert isinstance(dataset, xr.DataArray)
     out = dataset.interp(x=longitude, y=latitude, method="linear").item()
     return out
+
+
+def array_sample(
+    latitude: array.array[float], longitude: array.array[float]
+) -> xr.DataArray:
+    # TODO calculate tiles based on all values
+    i_lat, i_lon = tile(latitude[0], longitude[0])
+    filename = f"{TMP}/{_basename(i_lat, i_lon)}.tif"
+    if not os.path.exists(filename):
+        download(i_lat, i_lon)
+    dataset = rioxarray.open_rasterio(filename)
+    assert isinstance(dataset, xr.DataArray)
+    return dataset.interp(
+        x=xr.DataArray(longitude, dims="z"),
+        y=xr.DataArray(latitude, dims="z"),
+        method="linear",
+    )[0]

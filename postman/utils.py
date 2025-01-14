@@ -1,4 +1,5 @@
 import networkx as nx
+import pyproj
 import shapely
 
 from postman import datatypes, srtm
@@ -21,6 +22,43 @@ def label(x: dict):
 
 def label_len(x):
     return "{:03d} {:8.2f} {}".format(_id(x), x["geometry"].length, _name(x))
+
+
+def rearrange(tour: datatypes.TrackCollection, ids: list[tuple[int, int]]):
+    ids = [
+        (62, 39),
+        (63, 62),
+        (88, 61),
+        (0, 88),
+        (1, 0),
+        (2, 1),
+        (89, 2),
+    ]
+    ids = [
+        (65, 46),
+        (66, 65),
+        (91, 64),
+        (0, 91),
+        (1, 0),
+        (2, 1),
+        (92, 2),
+    ]
+    tmp = list(tour.values())
+    for from_id, to_id in ids:
+        item = tour[from_id]
+        tmp.pop(tmp.index(item))
+        to_index = tmp.index(tour[to_id])
+        print(
+            "move {} {} to {} {}".format(
+                from_id, item.name, to_index, tmp[to_index].name
+            )
+        )
+        tmp.insert(to_index + 1, item)
+    out = {}
+    for i, item in enumerate(tmp):
+        out[i] = item
+        item.id = i
+    return out
 
 
 def print_tour(tour: datatypes.Tour):
@@ -84,5 +122,15 @@ def print_nodes(graph):
         print(item, labels)
 
 
-def add_elevation(path: shapely.LineString):
-    return shapely.LineString([[x, y, srtm.sample(y, x)] for x, y in path.coords])
+def add_elevation_to_row_geometry(row, crs):
+    geometry = row.geometry
+    if geometry is not None:
+        return add_elevation(geometry, crs)
+
+
+def add_elevation(path: shapely.LineString, crs: int = 4326):
+    transformer = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
+    xy = path.coords.xy
+    longitude, latitude = transformer.transform(*path.coords.xy)
+    tmp = srtm.array_sample(latitude, longitude)
+    return shapely.LineString([[x, y, z] for x, y, z in zip(*path.coords.xy, tmp)])

@@ -18,6 +18,12 @@ def main():
     parser.add_argument("--save-segmented", action="store_true")
     args = parser.parse_args()
     trails = geopandas.read_file(args.trail_file)
+    for ax in trails.crs.axis_info:
+        if ax.unit_code != "9001":
+            raise RuntimeError("Data must be in meter-based projection")
+    trails["geometry"] = trails.apply(
+        utils.add_elevation_to_row_geometry, 1, args=(trails.crs,)
+    )
     preprocess.add_elevation_stats(trails)
     clean_trails = preprocess.fix_trails(trails)
     utils.print_trails(clean_trails)
@@ -26,8 +32,8 @@ def main():
     utils.print_tour(tour)
     if args.save is not None:
         tracks = plot.tour_to_tracks(tour)
-        for i, track in tracks.items():
-            print("add z to", i, track.name)
+        # tracks = utils.rearrange(tracks, [])
+        for _, track in tracks.items():
             track.path = utils.add_elevation(track.path)
         with open(args.save, "w") as fp:
             fp.write(save.to_gpx(tracks, as_segments=args.save_segmented))
