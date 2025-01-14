@@ -13,6 +13,8 @@ from postman import core, plot, preprocess, save, utils
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("trail_file")
+    parser.add_argument("start_node", type=int)
+    parser.add_argument("--print-graph", action="store_true")
     parser.add_argument("-p", "--plot", action="store_true")
     parser.add_argument("-s", "--save")
     parser.add_argument("--save-segmented", action="store_true")
@@ -26,9 +28,17 @@ def main():
     )
     preprocess.add_elevation_stats(trails)
     clean_trails = preprocess.fix_trails(trails)
+    print("preprocessed trails:")
     utils.print_trails(clean_trails)
     graph = preprocess.to_graph(clean_trails)
-    tour = core.trail_tour(graph, 6)
+    if args.print_graph:
+        print("graph edges:")
+        utils.print_graph_by_edges(graph)
+        print("graph nodes:")
+        utils.print_graph_by_nodes(graph)
+        return
+    tour = core.trail_tour(graph, args.start_node)
+    print("calculated tour:")
     utils.print_tour(tour)
     if args.save is not None:
         tracks = plot.tour_to_tracks(tour)

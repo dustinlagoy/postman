@@ -24,6 +24,10 @@ def label_len(x):
     return "{:03d} {:8.2f} {}".format(_id(x), x["geometry"].length, _name(x))
 
 
+def label_len_header():
+    return "id  distance name"
+
+
 def rearrange(tour: datatypes.TrackCollection, ids: list[tuple[int, int]]):
     ids = [
         (62, 39),
@@ -65,61 +69,53 @@ def print_tour(tour: datatypes.Tour):
     length = 0
     total_up = 0
     total_down = 0
+    print(f"num       up     down {label_len_header()}")
     for i, (_, _, data) in enumerate(tour):
         up = data["elevation_gain"]
         down = data["elevation_loss"]
-        print("{:02d} {:8.2f} {:8.2f} {}".format(i, up, down, label_len(data)))
+        print("{:3d} {:8.2f} {:8.2f} {}".format(i, up, down, label_len(data)))
         length += data["distance"]
         total_up += up
         total_down += down
     print(
-        "total length {:10.2f} up {:8.2f} down {:8.2f}".format(
+        "total distance {:10.2f} up {:8.2f} down {:8.2f}".format(
             length, total_up, total_down
         )
     )
 
 
 def print_trails(trails):
+    print(f"num   distance name")
     for i in trails.iterrows():
         print(
-            "{:02d} {:12.4f} {}".format(
+            "{:3d} {:10.2f} {}".format(
                 i[0], i[1]["distance"], str(i[1]["name"]).strip()
             )
         )
-    print("total", sum(x.distance for _, x in trails.iterrows()))
+    print(
+        "total distance {:10.2f}".format(sum(x.distance for _, x in trails.iterrows()))
+    )
 
 
-def print_graph(graph):
-    for i, (_, _, data) in enumerate(graph.edges(data=True)):
-        print(
-            "{:02d} {:12.4f} {}".format(i, data["distance"], str(data["name"]).strip())
+def print_graph_by_edges(graph: nx.MultiGraph):
+    for i, (u, v, data) in enumerate(graph.edges(data=True)):
+        print("edge between nodes {:4d} and {:4d} is {}".format(u, v, label_len(data)))
+        # print(
+        #     "{:02d} {:12.4f} {}".format(i, data["distance"], str(data["name"]).strip())
+        # )
+    print(
+        "total distance {:10.2f}".format(
+            sum(x["distance"] for _, _, x in graph.edges(data=True))
         )
-    print("total", sum(x["distance"] for _, _, x in graph.edges(data=True)))
+    )
 
 
-def print_graph(graph: nx.MultiGraph):
+def print_graph_by_nodes(graph: nx.MultiGraph):
     for u in graph.nodes:
-        print(u)
+        print(f"node {u} is connected to:")
         for v in graph.neighbors(u):
-            print("  ", v)
             for _, edge in graph.get_edge_data(u, v).items():
-                print("    ", label_len(edge))
-
-
-def print_edges(graph):
-    for i, item in enumerate(graph.edges.data()):
-        print(
-            "{:03d} {:03d} {:03d} {} {}".format(
-                i, item[0], item[1], label(item[2]), item[2]["geometry"].length
-            )
-        )
-
-
-def print_nodes(graph):
-    for item in graph.nodes:
-        edges = [graph.get_edge_data(*x)[0] for x in nx.edges(graph, item)]
-        labels = [label(x) for x in edges]
-        print(item, labels)
+                print("  node: {:4d} by edge: {}".format(v, label_len(edge)))
 
 
 def add_elevation_to_row_geometry(row, crs):
