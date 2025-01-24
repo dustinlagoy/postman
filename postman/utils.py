@@ -39,22 +39,45 @@ def rearrange(tour: datatypes.TrackCollection, ids: list[tuple[int, int]]):
         (89, 2),
     ]
     ids = [
-        (65, 46),
-        (66, 65),
-        (91, 64),
-        (0, 91),
+        (66, 46),
+        (65, 66),
+        (92, 64),
+        (0, 92),
         (1, 0),
         (2, 1),
-        (92, 2),
+        (91, 2),
+    ]
+    ids = [
+        (71, 37),
+        (70, 71),
+        (97, 69),
+        (0, 97),
+        (1, 0),
+        (2, 1),
+        (96, 2),
     ]
     tmp = list(tour.values())
     for from_id, to_id in ids:
         item = tour[from_id]
         tmp.pop(tmp.index(item))
         to_index = tmp.index(tour[to_id])
+        _, _, distance = pyproj.Geod(ellps="WGS84").inv(
+            *tmp[to_index].path.coords[-1],
+            *item.path.coords[0],
+        )
+        # distance = shapely.distance(
+        #     shapely.Point(tmp[to_index].path.coords[-1]),
+        #     shapely.Point(item.path.coords[0]),
+        # )
+        if distance > 0.1:
+            raise AttributeError(
+                "{} {} starts {:.6f} m from {} {}".format(
+                    from_id, item.name, distance, to_index, tmp[to_index].name
+                )
+            )
         print(
-            "move {} {} to {} {}".format(
-                from_id, item.name, to_index, tmp[to_index].name
+            "move {} {} to {} {} ({:.6f})".format(
+                from_id, item.name, to_index, tmp[to_index].name, distance
             )
         )
         tmp.insert(to_index + 1, item)

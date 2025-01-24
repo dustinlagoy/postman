@@ -42,7 +42,7 @@ def main():
     utils.print_tour(tour)
     if args.save is not None:
         tracks = plot.tour_to_tracks(tour)
-        # tracks = utils.rearrange(tracks, [])
+        tracks = utils.rearrange(tracks, [])
         for _, track in tracks.items():
             track.path = utils.add_elevation(track.path)
         with open(args.save, "w") as fp:
